@@ -8,16 +8,16 @@ void main() async {
 
   await MongoDatabase.connect();
 
-  runApp(const MyApp());
+  runApp(const MediaExplorerApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class MediaExplorerApp extends StatelessWidget {
+  const MediaExplorerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'CRUD MongoDB Flutter',
+      title: 'MediaExplorer',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorSchemeSeed: Colors.green,
