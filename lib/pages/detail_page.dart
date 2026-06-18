@@ -1,91 +1,207 @@
 import 'package:flutter/material.dart';
-
-import '../models/videojuego.dart';
+import '../models/item_coleccion.dart';
+import '../db/mongo_database.dart';
+import 'form_page.dart';
 
 class DetailPage extends StatelessWidget {
-  final Videojuego videojuego;
+  final ItemColeccion item;
 
-  const DetailPage({
-    super.key,
-    required this.videojuego,
-  });
+  const DetailPage({super.key, required this.item});
 
-  Widget imagenDetalle() {
-    if (videojuego.imagen.isEmpty) {
-      return const Icon(
-        Icons.videogame_asset,
-        size: 120,
-      );
-    }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          _buildAppBar(context),
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildInfoCard(),
+                const SizedBox(height: 12),
+                _buildPriceCard(),
+                const SizedBox(height: 12),
+                _buildDescriptionCard(),
+                const SizedBox(height: 80),
+              ]),
+            ),
+          ),
+        ],
+      ),
 
-    return Image.network(
-      videojuego.imagen,
-      height: 220,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) {
-        return const Icon(
-          Icons.broken_image,
-          size: 120,
-        );
-      },
+      // 👇 SIN routes.dart
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => FormPage(item: item),
+            ),
+          );
+        },
+        icon: const Icon(Icons.edit),
+        label: const Text('Editar'),
+      ),
     );
   }
 
-  Widget fila(String titulo, String valor) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  // ---------------- APP BAR ----------------
+  SliverAppBar _buildAppBar(BuildContext context) {
+    return SliverAppBar(
+      expandedHeight: 300,
+      pinned: true,
+      backgroundColor: Colors.indigo,
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(
+          item.titulo,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        background: item.imagen.isNotEmpty
+            ? Image.network(
+                item.imagen,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholder(),
+              )
+            : _placeholder(),
+      ),
+    );
+  }
+
+  Widget _placeholder() {
+    return Container(
+      color: Colors.indigo.withOpacity(0.2),
+      child: const Center(
+        child: Icon(Icons.image_not_supported_outlined, size: 80),
+      ),
+    );
+  }
+
+  // ---------------- INFO ----------------
+  Widget _buildInfoCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Información general',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            _row('Título', item.titulo),
+            _row('Categoría', item.categoria),
+            _row('Plataforma', item.plataforma),
+            _row('Fuente', item.fuente),
+            _row('ID', item.id),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------- PRICE ----------------
+  Widget _buildPriceCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            const Text(
+              'Precio y stock',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _stat(
+                    '\$${item.precio.toStringAsFixed(2)}',
+                    'Precio',
+                    Colors.indigo,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _stat(
+                    item.stock.toString(),
+                    'Stock',
+                    Colors.green,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _stat(String value, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
         children: [
           Text(
-            '$titulo: ',
-            style: const TextStyle(
+            value,
+            style: TextStyle(
+              fontSize: 20,
               fontWeight: FontWeight.bold,
+              color: color,
             ),
           ),
-          Expanded(
-            child: Text(valor),
-          ),
+          Text(label),
         ],
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(videojuego.titulo),
-      ),
-      body: SingleChildScrollView(
+  // ---------------- DESCRIPTION ----------------
+  Widget _buildDescriptionCard() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            imagenDetalle(),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        videojuego.titulo,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 16),
-                      fila('Plataforma', videojuego.plataforma),
-                      fila('Precio', '\$${videojuego.precio}'),
-                      fila('Stock', videojuego.stock.toString()),
-                      fila('Descripción', videojuego.descripcion),
-                    ],
-                  ),
-                ),
-              ),
+            const Text(
+              'Descripción',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              item.descripcion.isNotEmpty
+                  ? item.descripcion
+                  : 'Sin descripción.',
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _row(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 90,
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.grey),
+            ),
+          ),
+          Expanded(
+            child: Text(value.isNotEmpty ? value : '—'),
+          ),
+        ],
       ),
     );
   }
