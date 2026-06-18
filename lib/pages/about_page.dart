@@ -127,7 +127,7 @@ class AboutPage extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(icon, color: primary, size: 22),
+                Icon(icon, color: primary, size: 22),
                 const SizedBox(width: 8),
                 Text(
                   title,
@@ -152,7 +152,7 @@ class AboutPage extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          const Icon(icon, size: 20, color: gray),
+          Icon(icon, size: 20, color: gray),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

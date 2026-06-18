@@ -56,13 +56,14 @@ class _ApiExplorerPageState extends State<ApiExplorerPage> {
     });
   }
 
-  Future<void> _saveDeal(dynamic deal) async {
-    if (_saving.contains(deal.dealId)) return;
+  Future<void> _saveDeal(Map<String, dynamic> deal) async {
+    final dealId = deal['dealId'] as String;
+    if (_saving.contains(dealId)) return;
 
-    setState(() => _saving.add(deal.dealId));
+    setState(() => _saving.add(dealId));
 
     try {
-      final exists = await MongoDatabase.searchItems(deal.title);
+      final exists = await MongoDatabase.searchItems(deal['title']);
       if (exists.isNotEmpty) {
         SnackBarUtils.showWarning(context, 'Ya existe en colección');
         return;
@@ -70,12 +71,12 @@ class _ApiExplorerPageState extends State<ApiExplorerPage> {
 
       final item = ItemColeccion(
         id: const Uuid().v4(),
-        titulo: deal.title,
+        titulo: deal['title'] as String? ?? '',
         categoria: 'Videojuego',
-        plataforma: deal.storeId.toString(),
-        precio: deal.salePriceDouble,
+        plataforma: deal['storeId'].toString() ?? 'Desconocida',
+        precio: double.tryParse(deal['salePrice'] as String? ?? '0') ?? 0.0,
         stock: 1,
-        imagen: deal.thumb,
+        imagen: deal['thumb'] as String? ?? '',
         descripcion: 'Desde CheapShark',
         fuente: 'API',
       );
@@ -89,7 +90,7 @@ class _ApiExplorerPageState extends State<ApiExplorerPage> {
       SnackBarUtils.showError(context, 'Error: $e');
     } finally {
       if (mounted) {
-        setState(() => _saving.remove(deal.dealId));
+        setState(() => _saving.remove(dealId));
       }
     }
   }
@@ -108,15 +109,24 @@ class _ApiExplorerPageState extends State<ApiExplorerPage> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final deal = _deals[index];
+          final deal = _deals[index] as Map<String, dynamic>;
+          final dealId = deal['dealId'] as String;
 
           return Card(
             margin: const EdgeInsets.all(10),
             child: ListTile(
-              title: Text(deal.title),
-              subtitle: Text('\$${deal.salePrice}'),
+              leading: deal['thumb'] != null && (deal['thumb'] as String).isNotEmpty
+                  ? Image.network(
+                      deal['thumb'] as String,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    )
+                  : const Icon(Icons.videogame_asset),
+              title: Text(deal['title'] as String? ?? 'Sin título'),
+              subtitle: Text('\$${deal['salePrice'] as String? ?? '0.0'}'),
               trailing: IconButton(
-                icon: _saving.contains(deal.dealId)
+                icon: _saving.contains(dealId)
                     ? const CircularProgressIndicator()
                     : const Icon(Icons.save),
                 onPressed: () => _saveDeal(deal),

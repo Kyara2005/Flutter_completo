@@ -35,12 +35,12 @@ class ItemCard extends StatelessWidget {
                 children: [
                   _buildTitle(context),
                   const SizedBox(height: 6),
-                  _buildChips(),
+                  _buildChips(context),
                   const SizedBox(height: 8),
                   _buildPriceRow(context),
                   const SizedBox(height: 8),
                   const Divider(height: 1),
-                  _buildActions(),
+                  _buildActions(context),
                 ],
               ),
             ),
@@ -90,7 +90,7 @@ class ItemCard extends StatelessWidget {
     );
   }
 
-  Widget _buildChips() {
+  Widget _buildChips(BuildContext context) {
     return Wrap(
       spacing: 6,
       children: [

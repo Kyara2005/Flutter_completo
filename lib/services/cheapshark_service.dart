@@ -6,15 +6,15 @@ class CheapSharkService {
 
   /// Obtiene una lista de ofertas con paginación.
   ///
-  /// [page] -> Número de página.
+  /// [pageNumber] -> Número de página.
   /// [limit] -> Cantidad de registros por página.
   static Future<List<dynamic>> getDeals({
-    required int page,
-    required int limit,
+    required int pageNumber,
+    int limit = 20,
   }) async {
     try {
       final Uri url = Uri.parse(
-        "$_baseUrl/deals?pageNumber=$page&pageSize=$limit",
+        "$_baseUrl/deals?pageNumber=$pageNumber&pageSize=$limit",
       );
       final response = await http.get(url);
       if (response.statusCode == 200) {
