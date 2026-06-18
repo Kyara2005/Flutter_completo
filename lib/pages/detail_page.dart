@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/item_coleccion.dart';
-import '../db/mongo_database.dart';
 import 'form_page.dart';
 
 class DetailPage extends StatelessWidget {
@@ -18,11 +17,11 @@ class DetailPage extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _buildInfoCard(),
+                _buildInfoCard(context),
                 const SizedBox(height: 12),
-                _buildPriceCard(),
+                _buildPriceCard(context),
                 const SizedBox(height: 12),
-                _buildDescriptionCard(),
+                _buildDescriptionCard(context),
                 const SizedBox(height: 80),
               ]),
             ),
@@ -30,15 +29,16 @@ class DetailPage extends StatelessWidget {
         ],
       ),
 
-      // 👇 SIN routes.dart
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => FormPage(item: item),
             ),
           );
+
+          Navigator.pop(context); // volver al home después de editar
         },
         icon: const Icon(Icons.edit),
         label: const Text('Editar'),
@@ -51,7 +51,7 @@ class DetailPage extends StatelessWidget {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
-      backgroundColor: Colors.indigo,
+      backgroundColor: Theme.of(context).colorScheme.primary,
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           item.titulo,
@@ -62,16 +62,16 @@ class DetailPage extends StatelessWidget {
             ? Image.network(
                 item.imagen,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _placeholder(),
+                errorBuilder: (_, __, ___) => _placeholder(context),
               )
-            : _placeholder(),
+            : _placeholder(context),
       ),
     );
   }
 
-  Widget _placeholder() {
+  Widget _placeholder(BuildContext context) {
     return Container(
-      color: Colors.indigo.withOpacity(0.2),
+      color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
       child: const Center(
         child: Icon(Icons.image_not_supported_outlined, size: 80),
       ),
@@ -79,7 +79,7 @@ class DetailPage extends StatelessWidget {
   }
 
   // ---------------- INFO ----------------
-  Widget _buildInfoCard() {
+  Widget _buildInfoCard(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -95,7 +95,6 @@ class DetailPage extends StatelessWidget {
             _row('Categoría', item.categoria),
             _row('Plataforma', item.plataforma),
             _row('Fuente', item.fuente),
-            _row('ID', item.id),
           ],
         ),
       ),
@@ -103,7 +102,7 @@ class DetailPage extends StatelessWidget {
   }
 
   // ---------------- PRICE ----------------
-  Widget _buildPriceCard() {
+  Widget _buildPriceCard(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -118,14 +117,16 @@ class DetailPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: _stat(
+                    context,
                     '\$${item.precio.toStringAsFixed(2)}',
                     'Precio',
-                    Colors.indigo,
+                    Theme.of(context).colorScheme.primary,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: _stat(
+                    context,
                     item.stock.toString(),
                     'Stock',
                     Colors.green,
@@ -139,7 +140,7 @@ class DetailPage extends StatelessWidget {
     );
   }
 
-  Widget _stat(String value, String label, Color color) {
+  Widget _stat(BuildContext context, String value, String label, Color color) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -163,7 +164,7 @@ class DetailPage extends StatelessWidget {
   }
 
   // ---------------- DESCRIPTION ----------------
-  Widget _buildDescriptionCard() {
+  Widget _buildDescriptionCard(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),

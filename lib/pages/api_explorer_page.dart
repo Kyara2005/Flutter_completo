@@ -42,8 +42,10 @@ class _ApiExplorerPageState extends State<ApiExplorerPage> {
 
     setState(() => _loading = true);
 
-    final results =
+    try {
+      final results =
         await CheapSharkService.getDeals(pageNumber: _page);
+      if (!mounted) return;
 
     setState(() {
       if (results.isEmpty) {
@@ -52,20 +54,30 @@ class _ApiExplorerPageState extends State<ApiExplorerPage> {
         _deals.addAll(results);
         _page++;
       }
-      _loading = false;
     });
+    } catch (e) {
+      if (mounted) {
+        SnackBarUtils.showError(context, 'Error al cargar: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() { _loading = false; });
+      }
+    }
   }
 
   Future<void> _saveDeal(Map<String, dynamic> deal) async {
-    final dealId = deal['dealId'] as String;
+    final dealId = deal['dealId']?.toString() ?? '';
     if (_saving.contains(dealId)) return;
 
     setState(() => _saving.add(dealId));
 
     try {
-      final exists = await MongoDatabase.searchItems(deal['title']);
-      if (exists.isNotEmpty) {
-        SnackBarUtils.showWarning(context, 'Ya existe en colección');
+      final exists = await MongoDatabase.existsByTitle(deal['title']);
+      if (exists) {
+        if (mounted) {
+          SnackBarUtils.showWarning(context, 'Ya existe en colección');
+        }
         return;
       }
 
@@ -73,19 +85,19 @@ class _ApiExplorerPageState extends State<ApiExplorerPage> {
         id: const Uuid().v4(),
         titulo: deal['title'] as String? ?? '',
         categoria: 'Videojuego',
-        plataforma: deal['storeId'].toString() ?? 'Desconocida',
+        plataforma: '${deal['storeId']}',
         precio: double.tryParse(deal['salePrice'] as String? ?? '0') ?? 0.0,
         stock: 1,
         imagen: deal['thumb'] as String? ?? '',
         descripcion: 'Desde CheapShark',
-        fuente: 'API',
+        fuente: 'CheapShark API',
       );
 
       await MongoDatabase.insertItem(item);
 
       if (!mounted) return;
 
-      SnackBarUtils.showSuccess(context, 'Guardado correctamente');
+      SnackBarUtils.showSuccess(context, 'Guardado en mi coleccion');
     } catch (e) {
       SnackBarUtils.showError(context, 'Error: $e');
     } finally {
@@ -95,45 +107,86 @@ class _ApiExplorerPageState extends State<ApiExplorerPage> {
     }
   }
 
+  Future<void> _refresh() async {
+    setState(() {
+      _deals.clear();
+      _page = 0;
+      _hasMore = true;
+    });
+
+    await _loadMore();
+  }
+
+  Widget _buildImage(String imageUrl) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: imageUrl.isNotEmpty
+          ? Image.network(
+              imageUrl,
+              width: 50,
+              height: 50,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) =>
+                const Icon(Icons.videogame_asset),
+            )
+          : const Icon(Icons.videogame_asset),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Explorar API'),
       ),
-      body: ListView.builder(
-        controller: _scrollController,
-        itemCount: _deals.length + (_hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == _deals.length) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        child: ListView.builder(
+          controller: _scrollController,
+          itemCount: _deals.length + (_hasMore ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == _deals.length) {
+              return const Padding(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
 
-          final deal = _deals[index] as Map<String, dynamic>;
-          final dealId = deal['dealId'] as String;
+            final deal = _deals[index] as Map<String, dynamic>;
+            final dealId = deal['dealId']?.toString() ?? '';
 
-          return Card(
-            margin: const EdgeInsets.all(10),
-            child: ListTile(
-              leading: deal['thumb'] != null && (deal['thumb'] as String).isNotEmpty
-                  ? Image.network(
-                      deal['thumb'] as String,
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
-                    )
-                  : const Icon(Icons.videogame_asset),
-              title: Text(deal['title'] as String? ?? 'Sin título'),
-              subtitle: Text('\$${deal['salePrice'] as String? ?? '0.0'}'),
-              trailing: IconButton(
+            return Card(
+              margin: const EdgeInsets.all(10),
+              child: ListTile(
+                leading: _buildImage(deal['thumb'] as String? ?? ''),
+                title: Text(deal['title'] as String? ?? 'Sin título'),
+                subtitle: Text('\$${deal['salePrice'] as String? ?? '0.0'}'),
+                trailing: IconButton(
                 icon: _saving.contains(dealId)
-                    ? const CircularProgressIndicator()
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      )
                     : const Icon(Icons.save),
-                onPressed: () => _saveDeal(deal),
+                onPressed: _saving.contains(dealId)
+                    ? null
+                    : () => _saveDeal(deal),
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
