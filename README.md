@@ -77,15 +77,6 @@ GET https://www.cheapshark.com/api/1.0/deals?pageNumber=0&pageSize=20
 
 ---
 
-## ⚙️ Requisitos previos
-
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) `^3.11.4`
-- Dart `^3.11.4`
-- Android Studio o VS Code con la extensión Flutter
-- Cuenta en [MongoDB Atlas](https://www.mongodb.com/atlas) (o usar la cadena de conexión del proyecto)
-
----
-
 ## 🚀 Instrucciones de ejecución
 
 ### 1. Clonar el repositorio
@@ -119,11 +110,7 @@ flutter devices
 ### 5. Ejecutar la app en modo debug
 
 ```bash
-# En el emulador o dispositivo conectado
 flutter run
-
-# En un dispositivo específico
-flutter run -d <device-id>
 ```
 
 ---
@@ -133,18 +120,18 @@ flutter run -d <device-id>
 ### Desde la terminal (VS Code o cualquier terminal)
 
 ```bash
-# APK de release (recomendado para compartir)
 flutter build apk --debug
 flutter build apk --release
-
-# APK dividida por arquitectura (tamaño menor)
-flutter build apk --split-per-abi --release
 ```
 
 El archivo generado queda en:
 
 ```
 build/app/outputs/flutter-apk/app-release.apk
+```
+o
+```
+build/app/outputs/flutter-apk/app-debug.apk
 ```
 
 ### Desde Android Studio
@@ -193,6 +180,20 @@ lib/
 
 ---
 
+## 🔐 Permisos Android (`AndroidManifest.xml`)
+
+```xml
+<uses-permission android:name="android.permission.INTERNET"/>
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+```
+
+| Permiso | Por qué |
+|---|---|
+| `INTERNET` | Conexión a MongoDB Atlas y CheapShark API |
+| `ACCESS_NETWORK_STATE` | Verificar estado de red antes de conectar |
+
+---
+
 ## ✨ Funcionalidades
 
 - CRUD completo sobre MongoDB Atlas (crear, leer, actualizar, eliminar)
@@ -202,3 +203,37 @@ lib/
 - Filtro por categoría y plataforma
 - Estadísticas: precio promedio, máximo, mínimo, stock total, distribución por categoría y plataforma
 - Vista de detalle con imagen expandida
+
+---
+
+## 📸 Capturas de pantalla
+
+<p align="center">
+  <img src="assets/screenshots/home.jpg" width="180" alt="Pantalla principal"/>
+  &nbsp;&nbsp;
+  <img src="assets/screenshots/coleccion.jpg" width="180" alt="Mi colección"/>
+  &nbsp;&nbsp;
+  <img src="assets/screenshots/api.jpg" width="180" alt="Explorar API"/>
+  &nbsp;&nbsp;
+  <img src="assets/screenshots/estadisticas.jpg" width="180" alt="Estadísticas"/>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/detalle-juego.jpg" width="180" alt="Detalle de item"/>
+  &nbsp;&nbsp;
+  <img src="assets/screenshots/formulario.jpg" width="180" alt="Formulario"/>
+    &nbsp;&nbsp;
+  <img src="assets/screenshots/insertar-juego.jpg" width="180" alt="Insertar juego"/>
+    &nbsp;&nbsp;
+  <img src="assets/screenshots/actualizar-juego.jpg" width="180" alt="Editar juego"/>
+    &nbsp;&nbsp;
+  <img src="assets/screenshots/eliminar-juego.jpg" width="180" alt="Eliminar juego"/>
+    &nbsp;&nbsp;
+  <img src="assets/screenshots/guardar-juego.jpg" width="180" alt="Guardar juego"/>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/buscar-plataforma.jpg" width="180" alt="Buscar por plataforma"/>
+  &nbsp;&nbsp;
+  <img src="assets/screenshots/juego.jpg" width="180" alt="Juego"/>
+</p>

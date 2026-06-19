@@ -1,8 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Internet: para MongoDB Atlas y CheapShark API -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Estado de red: verificar conexión antes de llamadas -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
     <application
-        android:label="flutter_mongo"
+        android:label="MediaExplorer"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="false">   <!-- HTTPS only, MongoDB Atlas y CheapShark usan HTTPS -->
         <activity
             android:name=".MainActivity"
             android:exported="true"

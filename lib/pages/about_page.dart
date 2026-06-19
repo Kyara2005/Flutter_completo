@@ -110,15 +110,22 @@ class AboutPage extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          _section(context, 'Capturas', Icons.photo_library_outlined, [
-            _screenshotPlaceholder('Pantalla principal'),
-            _screenshotPlaceholder('Colección'),
-            _screenshotPlaceholder('API'),
-            _screenshotPlaceholder('Formulario'),
-            _screenshotPlaceholder('Estadísticas'),
-
-          ]),
-        ],
+          _section(context, 'Capturas', Icons.photo_library_outlined,
+            [
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _screenshot('assets/screenshots/home.jpg', 'Pantalla principal'),
+                  _screenshot('assets/screenshots/coleccion.jpg', 'Colección'),
+                  _screenshot('assets/screenshots/api.jpg', 'API'),
+                  _screenshot('assets/screenshots/formulario.jpg', 'Formulario'),
+                  _screenshot('assets/screenshots/estadisticas.jpg', 'Estadísticas'),
+                ],
+              ),
+            ],
+          ),
+        ],      
       ),
     );
   }
@@ -181,26 +188,29 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  Widget _screenshotPlaceholder(String label) {;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      height: 120,
-      decoration: BoxDecoration(
-        color: primary.withOpacity(0.07),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: primary.withOpacity(0.2)),
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.add_photo_alternate_outlined,
-                size: 32, color: primary.withOpacity(0.5)),
-            const SizedBox(height: 6),
-            Text(label, style: const TextStyle(color: textGray)),
-          ],
-        ),
+  Widget _screenshot(String path, String title) {
+    return SizedBox(
+      width: 160,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.asset(
+              path,
+              height: 250,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ],
       ),
     );
   }
