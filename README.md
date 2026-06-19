@@ -2,6 +2,9 @@
 
 Aplicación móvil desarrollada en Flutter para administrar una colección personal de videojuegos y explorar ofertas en tiempo real desde la API pública de CheapShark.
 
+
+LINK VIDEO: https://drive.google.com/drive/folders/1eDOCIA0BJN9NxYT03kEGFtvkerkIQSvk
+
 ## Captura de MongoDB Atlas con registros insertados.
 
 <p align="center">
