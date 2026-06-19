@@ -7,122 +7,144 @@ import 'about_page.dart';
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
+  static const primary = Color(0xFF6C63FF);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("MediaExplorer App"),
-        centerTitle: true,
-        backgroundColor: Colors.indigo,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
+      backgroundColor: const Color(0xFFF5F7FB),
 
-            const Icon(
-              Icons.video_library_rounded,
-              size: 100,
-              color: Colors.indigo,
-            ),
+      body: Column(
+        children: [
+          _header(),
 
-            const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-            const Text(
-              "Bienvenido a MediaExplorer",
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: GridView.count(
+                crossAxisCount: 2,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.85,
+                children: [
+                  _tile(
+                    context,
+                    icon: Icons.collections_bookmark_outlined,
+                    title: "Mi Colección",
+                    color: Colors.blue,
+                    page: const CollectionPage(),
+                  ),
+                  _tile(
+                    context,
+                    icon: Icons.public,
+                    title: "Explorar API",
+                    color: Colors.green,
+                    page: const ApiExplorerPage(),
+                  ),
+                  _tile(
+                    context,
+                    icon: Icons.bar_chart_outlined,
+                    title: "Estadísticas",
+                    color: Colors.orange,
+                    page: const StatisticsPage(),
+                  ),
+                  _tile(
+                    context,
+                    icon: Icons.info_outline,
+                    title: "Acerca de",
+                    color: Colors.purple,
+                    page: const AboutPage(),
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
-
-            const SizedBox(height: 10),
-
-            const Text(
-              "Administra tu colección personal y descubre videojuegos desde CheapShark.",
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
-            ),
-
-            const SizedBox(height: 40),
-
-            _menuButton(
-              context,
-              icon: Icons.collections_bookmark,
-              title: "Mi colección",
-              color: Colors.blue,
-              page: const CollectionPage(),
-            ),
-
-            const SizedBox(height: 15),
-
-            _menuButton(
-              context,
-              icon: Icons.public,
-              title: "Explorar API",
-              color: Colors.green,
-              page: const ApiExplorerPage(),
-            ),
-
-            const SizedBox(height: 15),
-
-            _menuButton(
-              context,
-              icon: Icons.bar_chart,
-              title: "Estadísticas",
-              color: Colors.orange,
-              page: const StatisticsPage(),
-            ),
-
-            const SizedBox(height: 15),
-
-            _menuButton(
-              context,
-              icon: Icons.info,
-              title: "Acerca de",
-              color: Colors.purple,
-              page: const AboutPage(),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _menuButton(
+  Widget _header() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(top: 60, bottom: 30),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF6C63FF), Color(0xFF8E85FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      child: Column(
+        children: const [
+          Icon(Icons.videogame_asset_rounded, size: 60, color: Colors.white),
+          SizedBox(height: 10),
+          Text(
+            "MediaExplorer",
+            style: TextStyle(
+              fontSize: 24,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            "Explora y gestiona tu mundo gamer",
+            style: TextStyle(color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tile(
     BuildContext context, {
     required IconData icon,
     required String title,
     required Color color,
     required Widget page,
   }) {
-    return SizedBox(
-      width: double.infinity,
-      height: 60,
-      child: ElevatedButton.icon(
-        icon: Icon(icon, size: 28),
-        label: Text(
-          title,
-          style: const TextStyle(fontSize: 18),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          elevation: 5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
+    return InkWell(
+      borderRadius: BorderRadius.circular(20),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => page),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            colors: [
+              color.withOpacity(0.15),
+              color.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          border: Border.all(color: color.withOpacity(0.2)),
         ),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => page,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 42, color: color),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }

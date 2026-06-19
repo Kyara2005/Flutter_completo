@@ -17,14 +17,17 @@ class _CollectionPageState extends State<CollectionPage> {
 
   List<ItemColeccion> items = [];
   List<ItemColeccion> filteredItems = [];
+  List<String> _categorias = [];
+  List<String> _plataformas = [];
 
   bool isLoading = true;
   String searchQuery = '';
+  String? _selectedCategoria;
+  String? _selectedPlataforma;
 
   @override
   void initState() {
     super.initState();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       cargarItems();
     });
@@ -38,117 +41,182 @@ class _CollectionPageState extends State<CollectionPage> {
 
   Future<void> cargarItems() async {
     try {
-      setState(() {
-        isLoading = true;
-      });
+      setState(() => isLoading = true);
 
       items = await MongoDatabase.getItems();
 
-      // Mantener filtro activo al refrescar
-      _searchItems(searchQuery, rebuild: false);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error cargando items: $e'),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
+      // Construir listas únicas de categorías y plataformas
+      final cats = <String>{};
+      final plats = <String>{};
+      for (final item in items) {
+        if (item.categoria.isNotEmpty) cats.add(item.categoria);
+        if (item.plataforma.isNotEmpty) plats.add(item.plataforma);
       }
+      _categorias = cats.toList()..sort();
+      _plataformas = plats.toList()..sort();
+
+      _applyFilters(rebuild: false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error cargando items: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
-  void _searchItems(String query, {bool rebuild = true}) {
-    searchQuery = query;
+  void _applyFilters({bool rebuild = true}) {
+    filteredItems = items.where((item) {
+      final matchesSearch = searchQuery.isEmpty ||
+          item.titulo.toLowerCase().contains(searchQuery.toLowerCase());
+      final matchesCategoria = _selectedCategoria == null ||
+          item.categoria == _selectedCategoria;
+      final matchesPlataforma = _selectedPlataforma == null ||
+          item.plataforma == _selectedPlataforma;
+      return matchesSearch && matchesCategoria && matchesPlataforma;
+    }).toList();
 
-    if (query.trim().isEmpty) {
-      filteredItems = List.from(items);
-    } else {
-      filteredItems = items.where((item) {
-        return item.titulo
-            .toLowerCase()
-            .contains(query.toLowerCase());
-      }).toList();
-    }
-
-    if (rebuild && mounted) {
-      setState(() {});
-    }
+    if (rebuild && mounted) setState(() {});
   }
+
+  void _onSearchChanged(String query) {
+    searchQuery = query.trim();
+    _applyFilters();
+  }
+
+  void _clearFilters() {
+    searchQuery = '';
+    _selectedCategoria = null;
+    _selectedPlataforma = null;
+    _applyFilters();
+  }
+
+  bool get _hasActiveFilters =>
+      searchQuery.isNotEmpty ||
+      _selectedCategoria != null ||
+      _selectedPlataforma != null;
 
   Future<void> _goToForm({ItemColeccion? item}) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => FormPage(item: item),
-      ),
+      MaterialPageRoute(builder: (context) => FormPage(item: item)),
     );
-
-    if (mounted) {
-      await cargarItems();
-    }
+    if (mounted) await cargarItems();
   }
 
   void _goToDetail(ItemColeccion item) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => DetailPage(item: item),
-      ),
+      MaterialPageRoute(builder: (context) => DetailPage(item: item)),
     );
   }
 
   Future<void> _deleteItem(ItemColeccion item) async {
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Confirmar eliminación'),
-          content: Text(
-            '¿Deseas eliminar "${item.titulo}"?',
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar eliminación'),
+        content: Text('¿Deseas eliminar "${item.titulo}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+    await MongoDatabase.deleteItem(item.id);
+    if (mounted) await cargarItems();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${item.titulo} eliminado correctamente')),
+      );
+    }
+  }
+
+  Widget _buildFilterBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Row(
+        children: [
+          // Dropdown categoría
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _selectedCategoria,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: 'Categoría',
+                prefixIcon: const Icon(Icons.category_outlined, size: 18),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Eliminar'),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('Todas')),
+                ..._categorias.map(
+                  (cat) => DropdownMenuItem(value: cat, child: Text(cat)),
+                ),
+              ],
+              onChanged: (value) {
+                setState(() => _selectedCategoria = value);
+                _applyFilters();
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Dropdown plataforma
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _selectedPlataforma,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: 'Plataforma',
+                prefixIcon: const Icon(Icons.devices_outlined, size: 18),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('Todas')),
+                ..._plataformas.map(
+                  (plat) => DropdownMenuItem(value: plat, child: Text(plat)),
+                ),
+              ],
+              onChanged: (value) {
+                setState(() => _selectedPlataforma = value);
+                _applyFilters();
+              },
+            ),
+          ),
+          // Botón limpiar filtros
+          if (_hasActiveFilters) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.filter_alt_off_outlined),
+              tooltip: 'Limpiar filtros',
+              onPressed: _clearFilters,
             ),
           ],
-        );
-      },
-    );
-
-    if (confirmar != true) return;
-
-    await MongoDatabase.deleteItem(item.id);
-
-    if (mounted) {
-      await cargarItems();
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${item.titulo} eliminado correctamente',
-        ),
+        ],
       ),
     );
   }
 
   Widget _buildBody() {
     if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (filteredItems.isEmpty) {
@@ -158,35 +226,20 @@ class _CollectionPageState extends State<CollectionPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.library_books_outlined,
-                size: 80,
-              ),
+              const Icon(Icons.library_books_outlined, size: 80),
               const SizedBox(height: 16),
               Text(
-                searchQuery.isEmpty
-                    ? 'No hay registros'
-                    : 'No se encontraron resultados',
+                _hasActiveFilters
+                    ? 'No se encontraron resultados'
+                    : 'No hay registros',
                 style: const TextStyle(fontSize: 18),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: searchQuery.isEmpty
-                    ? () => _goToForm()
-                    : () {
-                        _searchItems('');
-                      },
-                icon: Icon(
-                  searchQuery.isEmpty
-                      ? Icons.add
-                      : Icons.clear,
-                ),
-                label: Text(
-                  searchQuery.isEmpty
-                      ? 'Agregar item'
-                      : 'Limpiar búsqueda',
-                ),
+                onPressed: _hasActiveFilters ? _clearFilters : () => _goToForm(),
+                icon: Icon(_hasActiveFilters ? Icons.filter_alt_off : Icons.add),
+                label: Text(_hasActiveFilters ? 'Limpiar filtros' : 'Agregar item'),
               ),
             ],
           ),
@@ -198,11 +251,11 @@ class _CollectionPageState extends State<CollectionPage> {
       onRefresh: cargarItems,
       child: ListView.builder(
         controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8).copyWith(bottom: 100),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8)
+            .copyWith(bottom: 100),
         itemCount: filteredItems.length,
         itemBuilder: (context, index) {
           final item = filteredItems[index];
-
           return ItemCard(
             item: item,
             onTapDetail: () => _goToDetail(item),
@@ -218,7 +271,11 @@ class _CollectionPageState extends State<CollectionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi colección'),
+        title: Text(
+          _hasActiveFilters
+              ? 'Mi colección (${filteredItems.length})'
+              : 'Mi colección',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -235,16 +292,12 @@ class _CollectionPageState extends State<CollectionPage> {
       ),
       body: Column(
         children: [
+          // Buscador
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              8,
-            ),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
               textInputAction: TextInputAction.search,
-              onChanged: (value) => _searchItems(value.trim()),
+              onChanged: _onSearchChanged,
               decoration: InputDecoration(
                 hintText: 'Buscar por título...',
                 prefixIcon: const Icon(Icons.search),
@@ -252,7 +305,8 @@ class _CollectionPageState extends State<CollectionPage> {
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: () {
-                          _searchItems('');
+                          searchQuery = '';
+                          _applyFilters();
                         },
                       )
                     : null,
@@ -262,10 +316,9 @@ class _CollectionPageState extends State<CollectionPage> {
               ),
             ),
           ),
-
-          Expanded(
-            child: _buildBody(),
-          ),
+          // Filtros categoría / plataforma
+          _buildFilterBar(),
+          Expanded(child: _buildBody()),
         ],
       ),
     );
